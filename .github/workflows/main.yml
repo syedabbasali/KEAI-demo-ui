@@ -2,7 +2,7 @@ name: CI
 
 env:
   IMAGE_TAG: ${{ github.sha }} # Set the image tag to the commit SHA
-  REPO_NAME: KEAI-demo-ui  # Name of the Docker repository
+  REPO_NAME: keai-demo-ui  # Name of the Docker repository
 
 on:
   push:
