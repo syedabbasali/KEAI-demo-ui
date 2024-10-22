@@ -1,6 +1,16 @@
 name: CI
 
-on: [push, pull_request]
+env:
+  IMAGE_TAG: ${{ github.sha }} # Set the image tag to the commit SHA
+  REPO_NAME: KEAI-demo-ui  # Name of the Docker repository
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -21,5 +31,25 @@ jobs:
       - name: Build
         run: npm run build
 
-    #   - name: Test
-    #     run: npm test
+      # - name: Test
+      #   run: npm test
+
+      - name: Build Docker image
+        run: docker build . --tag abbasabs/${{ env.REPO_NAME }}:${{ env.IMAGE_TAG }} # Build Docker image with correct tagging
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u abbasabs --password-stdin # Login securely to Docker Hub
+
+      - name: Push to Docker Hub  
+        run: docker push abbasabs/${{ env.REPO_NAME }}:${{ env.IMAGE_TAG }} # Push the image to Docker Hub
+
+      - name: Pull docker image file to EC2
+        uses: appleboy/ssh-action@master
+        with: 
+          host: ${{ secrets.EC2_Public_IP_UI }}
+          username: ec2-user
+          key: ${{ secrets.SSH_KEY_SECRET }}
+          script: |
+            sudo systemctl start docker
+            sudo docker pull abbasabs/${{ env.REPO_NAME }}:${{ env.IMAGE_TAG }}
+            sudo docker run -d abbasabs/${{ env.REPO_NAME }}:${{ env.IMAGE_TAG }}
